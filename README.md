@@ -1,7 +1,7 @@
-# [PROJECT NAME] Calendar_App
+# Calendar_App
 
 ## DESCRIPTION
-A cross-platform mobile application built with Flutter and Dart to help users organize their time, habits, and daily schedules in one place. A Flutter-based calendar app designed to give users full control over their time through intuitive event tracking, customizable categories, and daily scheduling views.
+A cross-platform mobile application built with Flutter and Dart to help users organize their time, habits, and daily schedules in one place. Designed to give users full control through intuitive event tracking, customizable categories, and layered scheduling views.
 
 ## KEY FEATURES
 * **Layered Calendar Views:**
@@ -14,27 +14,52 @@ A cross-platform mobile application built with Flutter and Dart to help users or
 * **Smart Utilities & Data:** Offline-first local storage, category time analytics, weather overlays and cloud synchronization.
 
 ## TECH STACK
+* **Framework:** Flutter
+* **Language:** Dart
+* **Development Environment:** Visual Studio Code
+* **Version Control:** Git & GitHub
 
 ## INSTALLATION / GETTING STARTED
-A new Flutter project.
 
-This project is a starting point for a Flutter application.
+### Prerequisites
+* Flutter SDK installed on your machine
+* VS Code or Android Studio with Flutter/Dart extensions
+* Git installed
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
+### Setup & Run
+1. **Clone the repository:**
+   `https://github.com/prozuhur96/Calendar_App.git`
 
 ## PROJECT STRUCTURE
 
+```text
+lib/
+├── main.dart             # App entry point & initialization
+├── core/                 # Shared utilities, constants, theme, & helper classes
+│   ├── constants/
+│   └── theme/
+├── models/               # Data structures (Event, Category, Habit)
+├── screens/              # UI pages / screens
+│   ├── month_view.dart
+│   ├── week_view.dart
+│   ├── day_view.dart
+│   └── reminders_view.dart
+├── widgets/              # Reusable UI components (custom cards, dialogs, buttons)
+└── services/             # Local storage, APIs, & state management logic
+```
+
 ## ROADMAP
 
-## ENVIRONMENT VARAIBLES
+- [x] Initial Flutter project setup & Git repository initialization
+- [x] Define application scope and UI/UX requirements
+- [ ] Implement Month View (calendar grid displaying holidays & special occasions)
+- [ ] Implement Week View (high-level daily focus & goal management)
+- [ ] Implement Day View (detailed schedule & daily planner layouts)
+- [ ] Build Dedicated Reminders & Important Tasks feature
+- [ ] Integrate local storage for offline data persistence
+- [ ] Add Habits & Time-Blocking tools
+- [ ] Add Category Analytics & Weather integrations (Post-MVP)
 
 ## LICENSE
+
+Distributed under the MIT License. See `LICENSE` for more information.
