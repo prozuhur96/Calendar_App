@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/home_shell.dart';
 
 void main() {
   runApp(const CalendarApp());
@@ -13,17 +14,10 @@ class CalendarApp extends StatelessWidget {
       title: 'Calendar App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Calendar App Initialized',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      home: const HomeShell(),
     );
   }
 }
