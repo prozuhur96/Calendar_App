@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'screens/home_shell.dart';
 
 void main() {
-  runApp(const CalendarApp());
+  runApp(const MyApp());
 }
 
-class CalendarApp extends StatelessWidget {
-  const CalendarApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class CalendarApp extends StatelessWidget {
       title: 'Calendar App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B21A8)),
         useMaterial3: true,
       ),
       home: const HomeShell(),
