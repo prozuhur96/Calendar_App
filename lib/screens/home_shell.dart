@@ -33,6 +33,11 @@ class _HomeShellState extends State<HomeShell> {
       body: AnimatedBuilder(
         animation: _repository,
         builder: (context, child) {
+          if (_repository.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFA855F7)),
+            );
+          }
           return IndexedStack(
             index: _selectedIndex,
             children: screens,
