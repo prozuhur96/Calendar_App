@@ -1,5 +1,24 @@
+// lib/screens/day_view.dart
+
 import 'package:flutter/material.dart';
+import '../models/event.dart';
 import '../services/event_repository.dart';
+
+class ReminderItem {
+  final String id;
+  final String title;
+  final String note;
+  final DateTime dueDate;
+  bool isCompleted;
+
+  ReminderItem({
+    required this.id,
+    required this.title,
+    required this.note,
+    required this.dueDate,
+    this.isCompleted = false,
+  });
+}
 
 class DayViewScreen extends StatefulWidget {
   final EventRepository repository;
@@ -11,205 +30,378 @@ class DayViewScreen extends StatefulWidget {
 }
 
 class _DayViewScreenState extends State<DayViewScreen> {
-  DateTime _currentDate = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
 
-  // Dark Purple Theme Palette
-  static const Color darkBg = Color(0xFF1E1035);
-  static const Color headerPurple = Color(0xFF2D124D);
-  static const Color accentPurple = Color(0xFFA855F7);
+  void _previousDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+    });
+  }
 
-  void _showAddEventDialog() {
+  void _nextDay() {
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+  }
+
+  void _selectDate(BuildContext context) async {
+    final theme = widget.repository.currentTheme;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: theme.primaryColor,
+              surface: theme.darkHeaderColor,
+              onSurface: theme.textColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  void _showAddDialog(BuildContext context) {
+    final theme = widget.repository.currentTheme;
     final titleController = TextEditingController();
-    final descController = TextEditingController();
+    final noteController = TextEditingController();
+    bool isReminder = false;
+    TimeOfDay selectedTime = TimeOfDay.now();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: headerPurple,
-        title: const Text('Add Event', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: accentPurple)),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: theme.darkHeaderColor,
+              title: Text(
+                'Add Item for ${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
+                style: TextStyle(color: theme.textColor, fontSize: 16),
               ),
-            ),
-            TextField(
-              controller: descController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: accentPurple)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Event'),
+                          selected: !isReminder,
+                          selectedColor: theme.primaryColor,
+                          labelStyle: TextStyle(
+                            color: !isReminder ? theme.onPrimaryColor : theme.textColor,
+                          ),
+                          onSelected: (val) {
+                            if (val) setDialogState(() => isReminder = false);
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        ChoiceChip(
+                          label: const Text('Reminder'),
+                          selected: isReminder,
+                          selectedColor: theme.primaryColor,
+                          labelStyle: TextStyle(
+                            color: isReminder ? theme.onPrimaryColor : theme.textColor,
+                          ),
+                          onSelected: (val) {
+                            if (val) setDialogState(() => isReminder = true);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: titleController,
+                      style: TextStyle(color: theme.textColor),
+                      decoration: InputDecoration(
+                        labelText: isReminder ? 'Reminder Title' : 'Event Title',
+                        labelStyle: TextStyle(color: theme.subtextColor),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: theme.subtextColor),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: theme.primaryColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    TextField(
+                      controller: noteController,
+                      style: TextStyle(color: theme.textColor),
+                      decoration: InputDecoration(
+                        labelText: isReminder ? 'Note (optional)' : 'Description (optional)',
+                        labelStyle: TextStyle(color: theme.subtextColor),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: theme.subtextColor),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: theme.primaryColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Time: ${selectedTime.format(context)}',
+                        style: TextStyle(color: theme.textColor, fontSize: 14),
+                      ),
+                      trailing: Icon(Icons.access_time, color: theme.primaryColor),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (time != null) {
+                          setDialogState(() => selectedTime = time);
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: accentPurple,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              if (titleController.text.trim().isNotEmpty) {
-                final newEvent = Event(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: titleController.text.trim(),
-                  description: descController.text.trim(),
-                  startTime: _currentDate,
-                  endTime: _currentDate.add(const Duration(hours: 1)),
-                );
-                widget.repository.addEvent(_currentDate, newEvent);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel', style: TextStyle(color: theme.subtextColor)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: theme.onPrimaryColor,
+                  ),
+                  onPressed: () {
+                    final title = titleController.text.trim();
+                    if (title.isEmpty) return;
+
+                    final dateTime = DateTime(
+                      _selectedDate.year,
+                      _selectedDate.month,
+                      _selectedDate.day,
+                      selectedTime.hour,
+                      selectedTime.minute,
+                    );
+
+                    if (isReminder) {
+                      final newReminder = ReminderItem(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        title: title,
+                        note: noteController.text.trim(),
+                        dueDate: dateTime,
+                        isCompleted: false,
+                      );
+                      
+                      // Handles both custom object types or dynamic repository addition
+                      try {
+                        (widget.repository as dynamic).addReminder(newReminder);
+                      } catch (_) {
+                        widget.repository.addEvent(
+                          _selectedDate,
+                          Event(
+                            id: newReminder.id,
+                            title: '[Reminder] ${newReminder.title}',
+                            description: newReminder.note,
+                            startTime: newReminder.dueDate,
+                            endTime: newReminder.dueDate.add(const Duration(minutes: 30)),
+                            categoryColor: theme.primaryColor,
+                          ),
+                        );
+                      }
+                    } else {
+                      final newEvent = Event(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        title: title,
+                        description: noteController.text.trim(),
+                        startTime: dateTime,
+                        endTime: dateTime.add(const Duration(hours: 1)),
+                        categoryColor: theme.primaryColor,
+                      );
+                      widget.repository.addEvent(_selectedDate, newEvent);
+                    }
+
+                    Navigator.pop(context);
+                  },
+                  child: Text(isReminder ? 'Save Reminder' : 'Save Event'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final events = widget.repository.getEventsForDay(_currentDate);
+    return ListenableBuilder(
+      listenable: widget.repository,
+      builder: (context, _) {
+        final theme = widget.repository.currentTheme;
+        final dayEvents = widget.repository.getEventsForDay(_selectedDate);
 
-    return Scaffold(
-      backgroundColor: darkBg,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: accentPurple,
-        foregroundColor: Colors.white,
-        onPressed: _showAddEventDialog,
-        child: const Icon(Icons.add),
-      ),
-      body: Column(
-        children: [
-          // Date Banner Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            color: headerPurple,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Scaffold(
+          backgroundColor: theme.isLight ? Colors.white : const Color(0xFF121212),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: theme.primaryColor,
+            foregroundColor: theme.onPrimaryColor,
+            onPressed: () => _showAddDialog(context),
+            child: const Icon(Icons.add),
+          ),
+          body: SafeArea(
+            child: Column(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Colors.white),
-                  onPressed: () {
-                    setState(() {
-                      _currentDate = _currentDate.subtract(const Duration(days: 1));
-                    });
-                  },
-                ),
-                Text(
-                  '${_currentDate.year}-${_currentDate.month.toString().padLeft(2, '0')}-${_currentDate.day.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                // Top Date Header
+                Container(
+                  color: theme.darkHeaderColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.chevron_left, color: theme.textColor),
+                        onPressed: _previousDay,
+                      ),
+                      GestureDetector(
+                        onTap: () => _selectDate(context),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: 16, color: theme.primaryColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
+                              style: TextStyle(
+                                color: theme.textColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.chevron_right, color: theme.textColor),
+                        onPressed: _nextDay,
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right, color: Colors.white),
-                  onPressed: () {
-                    setState(() {
-                      _currentDate = _currentDate.add(const Duration(days: 1));
-                    });
-                  },
+
+                const Divider(height: 1, thickness: 1),
+
+                // Timeline View
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: 24,
+                    itemBuilder: (context, hour) {
+                      final hourEvents = dayEvents.where((e) => e.startTime.hour == hour).toList();
+                      final hourLabel = '${hour.toString().padLeft(2, '0')}:00';
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: theme.isLight ? Colors.black12 : Colors.white12,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 60,
+                              padding: const EdgeInsets.only(top: 8, left: 8),
+                              child: Text(
+                                hourLabel,
+                                style: TextStyle(
+                                  color: theme.subtextColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minHeight: 50),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ...hourEvents.map((event) => Container(
+                                          margin: const EdgeInsets.only(bottom: 4),
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: theme.primaryColor.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border(
+                                              left: BorderSide(color: theme.primaryColor, width: 4),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      event.title,
+                                                      style: TextStyle(
+                                                        color: theme.textColor,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    if (event.description.isNotEmpty)
+                                                      Text(
+                                                        event.description,
+                                                        style: TextStyle(
+                                                          color: theme.subtextColor,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline,
+                                                    color: Colors.redAccent, size: 16),
+                                                onPressed: () {
+                                                  widget.repository.deleteEvent(_selectedDate, event.id);
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
           ),
-
-          // Hourly Timeline List
-          Expanded(
-            child: ListView.builder(
-              itemCount: 24,
-              itemBuilder: (context, hour) {
-                final hourEvents = events.where((e) => e.startTime.hour == hour).toList();
-
-                return Container(
-                  constraints: const BoxConstraints(minHeight: 52),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.white12, width: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 55,
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          '${hour.toString().padLeft(2, '0')}:00',
-                          style: const TextStyle(color: Colors.white54, fontSize: 11),
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: hourEvents.map((event) {
-                            return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
-                              padding: const EdgeInsets.all(8.0),
-                              decoration: BoxDecoration(
-                                color: headerPurple,
-                                borderRadius: BorderRadius.circular(6.0),
-                                border: const Border(
-                                  left: BorderSide(color: accentPurple, width: 4),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        event.title,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      if (event.description.isNotEmpty)
-                                        Text(
-                                          event.description,
-                                          style: const TextStyle(fontSize: 11, color: Colors.white60),
-                                        ),
-                                    ],
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
-                                    onPressed: () {
-                                      widget.repository.deleteEvent(_currentDate, event.id);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
